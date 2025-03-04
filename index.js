@@ -22,7 +22,9 @@ function getComments() {
 }
 
 function processCommand(command) {
-    switch (command) {
+    const parts = command.split(' ');
+    const action = parts[0];
+    switch (action) {
         case 'exit':
             process.exit(0);
             break;
@@ -33,6 +35,14 @@ function processCommand(command) {
             for (const todo of comments) {
                 if (todo.includes('!')) console.log(todo);
             }
+            break;
+        case 'user':
+            const username = parts.slice(1).join(' ').toLowerCase();
+            const userComments = comments.filter(comment => {
+                const match = comment.match(/\/\/ TODO (\w+);.*;.*/i);
+                return match && match[1].toLowerCase() === username;
+            });
+            userComments.forEach(comment => console.log(comment));
             break;
         default:
             console.log('wrong command');
