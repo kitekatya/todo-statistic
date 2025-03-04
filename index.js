@@ -21,6 +21,47 @@ function getComments() {
     return answer.flat();
 }
 
+function showSort(command){
+    switch (command) {
+        case 'importance':
+            comments.sort((a, b) => b.includes('!') - a.includes('!')).forEach(a => console.log(a));
+            break;
+        case 'user':
+            const userTasks = new Map();
+            const noUserTasks = [];
+
+            comments.forEach(comment => {
+                const match = comment.match(/\/\/ TODO (.+);.*;.*/i); // Ищем имя пользователя перед `:`
+                if (match) {
+                    const user = match[1].toLowerCase();
+
+                    if (!userTasks.has(user)) {
+                        userTasks.set(user, []);
+                    }
+                    userTasks.get(user).push(match[0]);
+                } else {
+                    noUserTasks.push(comment);
+                }
+            });
+
+            [...userTasks.entries()]
+                .sort(([userA], [userB]) => userA.localeCompare(userB)) // Сортируем пользователей по алфавиту
+                .forEach(([user, tasks]) => {
+                    console.log(`${user}:`); // Выводим имя пользователя в верхнем регистре
+                    tasks.forEach(task => console.log(`  ${task}`));
+                });
+
+            if (noUserTasks.length > 0) {
+                console.log(`NO USER:`);
+                noUserTasks.forEach(task => console.log(`  ${task}`));
+            }
+            break;
+        default:
+            console.log('wrong command');
+            break;
+    }
+}
+
 function processCommand(command) {
     const parts = command.split(' ');
     const action = parts[0];
@@ -43,6 +84,10 @@ function processCommand(command) {
                 return match && match[1].toLowerCase() === username;
             });
             userComments.forEach(comment => console.log(comment));
+            break;
+        case 'sort':
+            const type = parts.slice(1);
+            showSort(type[0]);
             break;
         default:
             console.log('wrong command');
