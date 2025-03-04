@@ -31,7 +31,7 @@ function showSort(command){
             const noUserTasks = [];
 
             comments.forEach(comment => {
-                const match = comment.match(/\/\/ TODO (.+);.*;.*/i); // Ищем имя пользователя перед `:`
+                const match = comment.match(/\/\/ TODO (.+);.*;.*/i);
                 if (match) {
                     const user = match[1].toLowerCase();
 
@@ -45,9 +45,9 @@ function showSort(command){
             });
 
             [...userTasks.entries()]
-                .sort(([userA], [userB]) => userA.localeCompare(userB)) // Сортируем пользователей по алфавиту
+                .sort(([userA], [userB]) => userA.localeCompare(userB))
                 .forEach(([user, tasks]) => {
-                    console.log(`${user}:`); // Выводим имя пользователя в верхнем регистре
+                    console.log(`${user}:`);
                     tasks.forEach(task => console.log(`  ${task}`));
                 });
 
@@ -56,6 +56,11 @@ function showSort(command){
                 noUserTasks.forEach(task => console.log(`  ${task}`));
             }
             break;
+        case 'date':
+            comments.sort((a,b) => new Date(a) - new Date(b))
+                .forEach(comment => console.log(comment));
+            break;
+
         default:
             console.log('wrong command');
             break;
@@ -88,6 +93,24 @@ function processCommand(command) {
         case 'sort':
             const type = parts.slice(1);
             showSort(type[0]);
+            break;
+        case 'date':
+            const dateStr = parts.slice(1).join(' ');
+            const datePattern = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/;
+            const match = dateStr.match(datePattern);
+            if (!match) {
+                console.log('Invalid date format. Use yyyy, yyyy-mm, or yyyy-mm-dd.');
+                break;
+            }
+
+            const targetDate = new Date(dateStr);
+            comments.filter(comment => {
+                const dateMatch = comment.match(/\/\/ TODO .*; (\d{4}-\d{2}-\d{2});/i);
+                if (!dateMatch) return false;
+
+                const commentDate = new Date(dateMatch[1]);
+                return commentDate >= targetDate;
+            }).forEach(comment => console.log(comment));
             break;
         default:
             console.log('wrong command');
