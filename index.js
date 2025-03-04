@@ -18,7 +18,7 @@ function getComments() {
     for (const content of files) {
         answer.push([...content.matchAll(regexp)].map(match => match[0]));
     }
-    return answer;
+    return answer.flat();
 }
 
 function processCommand(command) {
@@ -27,7 +27,12 @@ function processCommand(command) {
             process.exit(0);
             break;
         case 'show':
-            comments.flat(1).forEach(comment => console.log(comment));
+            comments.forEach(comment => console.log(comment));
+            break;
+        case 'important':
+            for (const todo of comments) {
+                if (todo.includes('!')) console.log(todo);
+            }
             break;
         default:
             console.log('wrong command');
