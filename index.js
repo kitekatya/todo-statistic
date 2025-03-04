@@ -21,10 +21,53 @@ function getComments() {
     return answer.flat();
 }
 
+function showTable(arr) {
+    const rows = arr.map(parseComment);
+    const colWidths = { Importance: 1, User: 10, Date: 10, Comment: 50 };
+
+    function formatText(text, width) {
+        return text.length > width ? text.slice(0, width - 3) + '...' : text.padEnd(width);
+    }
+
+    const header = ` ${'!'.padEnd(colWidths.Importance)} | ${'User'.padEnd(colWidths.User)} | ${'Date'.padEnd(colWidths.Date)} | ${'Comment'.padEnd(colWidths.Comment)} `;
+    console.log(header);
+    console.log('-'.repeat(header.length));
+
+    rows.forEach(row => {
+        console.log(
+            ` ${formatText(row.Importance, colWidths.Importance)} | ` +
+            `${formatText(row.User, colWidths.User)} | ` +
+            `${formatText(row.Date, colWidths.Date)} | ` +
+            `${formatText(row.Comment, colWidths.Comment)} `
+        );
+    });
+}
+
+
+function parseComment(comment) {
+    const match = comment.match(/\/\/ TODO (.*);(.*);(.*)/i);
+    if (match) {
+        return {
+            Importance: comment.includes('!') ? '!' : '',
+            User: match[1] || '—',
+            Date: match[2] || '—',
+            Comment: match[3] || comment.replace('// TODO ', '')
+        };
+    } else {
+        return {
+            Importance: comment.includes('!') ? '!' : '',
+            User: '—',
+            Date: '—',
+            Comment: comment.replace('// TODO ', '')
+        };
+    }
+}
+
+
 function showSort(command){
     switch (command) {
         case 'importance':
-            comments.sort((a, b) => b.includes('!') - a.includes('!')).forEach(a => console.log(a));
+            showTable(comments.sort((a, b) => b.includes('!') - a.includes('!')));
             break;
         case 'user':
             const userTasks = new Map();
@@ -34,31 +77,23 @@ function showSort(command){
                 const match = comment.match(/\/\/ TODO (.+);.*;.*/i);
                 if (match) {
                     const user = match[1].toLowerCase();
-
                     if (!userTasks.has(user)) {
                         userTasks.set(user, []);
                     }
-                    userTasks.get(user).push(match[0]);
+                    userTasks.get(user).push(comment);
                 } else {
                     noUserTasks.push(comment);
                 }
             });
 
-            [...userTasks.entries()]
+            const sortedTasks = [...userTasks.entries()]
                 .sort(([userA], [userB]) => userA.localeCompare(userB))
-                .forEach(([user, tasks]) => {
-                    console.log(`${user}:`);
-                    tasks.forEach(task => console.log(`  ${task}`));
-                });
+                .flatMap(([, tasks]) => tasks); 
 
-            if (noUserTasks.length > 0) {
-                console.log(`NO USER:`);
-                noUserTasks.forEach(task => console.log(`  ${task}`));
-            }
+            showTable([...sortedTasks, ...noUserTasks]);
             break;
         case 'date':
-            comments.sort((a,b) => new Date(a) - new Date(b))
-                .forEach(comment => console.log(comment));
+            showTable(comments.sort((a,b) => new Date(a) - new Date(b)));
             break;
 
         default:
@@ -75,12 +110,10 @@ function processCommand(command) {
             process.exit(0);
             break;
         case 'show':
-            comments.forEach(comment => console.log(comment));
+            showTable(comments);
             break;
         case 'important':
-            for (const todo of comments) {
-                if (todo.includes('!')) console.log(todo);
-            }
+            showTable(comments.filter(x => x.includes('!')));
             break;
         case 'user':
             const username = parts.slice(1).join(' ').toLowerCase();
@@ -88,7 +121,7 @@ function processCommand(command) {
                 const match = comment.match(/\/\/ TODO (\w+);.*;.*/i);
                 return match && match[1].toLowerCase() === username;
             });
-            userComments.forEach(comment => console.log(comment));
+            showTable(userComments);
             break;
         case 'sort':
             const type = parts.slice(1);
@@ -104,13 +137,13 @@ function processCommand(command) {
             }
 
             const targetDate = new Date(dateStr);
-            comments.filter(comment => {
+            showTable(comments.filter(comment => {
                 const dateMatch = comment.match(/\/\/ TODO .*; (\d{4}-\d{2}-\d{2});/i);
                 if (!dateMatch) return false;
 
                 const commentDate = new Date(dateMatch[1]);
                 return commentDate >= targetDate;
-            }).forEach(comment => console.log(comment));
+            }));
             break;
         default:
             console.log('wrong command');
